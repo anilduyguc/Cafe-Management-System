@@ -1,5 +1,6 @@
 package com.kenobi.cafe.serviceImpl;
 
+import com.google.common.base.Strings;
 import com.kenobi.cafe.constents.CafeConstants;
 import com.kenobi.cafe.dao.UserDao;
 import com.kenobi.cafe.jwt.CustomerUsersDetailsService;
@@ -97,6 +98,43 @@ public class UserServiceImpl implements UserService {
                     return CafeUtils.getResponseEntity("User id does not exist", HttpStatus.NO_CONTENT);
                 }
             } else return CafeUtils.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS,HttpStatus.UNAUTHORIZED);
+        } catch (Exception exception){
+            exception.printStackTrace();
+        }
+        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<String> checkToken() {
+        return CafeUtils.getResponseEntity("true", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> changePassword(Map<String, String> requestMap) {
+        try {
+            User user = userDao.findByEmail(jwtFilter.getCurrentUser());
+            if(user != null){
+                if(user.getPassword().equalsIgnoreCase(requestMap.get("oldPassword"))){
+                    user.setPassword(requestMap.get("newPassword"));
+                    userDao.save(user);
+                    return CafeUtils.getResponseEntity("Password has been updated successfully", HttpStatus.OK);
+                }
+                return CafeUtils.getResponseEntity("Old password is not true", HttpStatus.BAD_REQUEST);
+            }
+            return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception exception){
+            exception.printStackTrace();
+        }
+    return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<String> forgotPassword(Map<String, String> requestMap) {
+        try {
+            User user = userDao.findByEmail(requestMap.get("email"));
+            if(!Objects.isNull(user) && !Strings.isNullOrEmpty(user.getEmail()))
+                emailUtils.forgotMail(user.getEmail(), "Credentials by Cafe Management System", user.getPassword());
+            return CafeUtils.getResponseEntity("Check your email for credentials", HttpStatus.BAD_GATEWAY);
         } catch (Exception exception){
             exception.printStackTrace();
         }

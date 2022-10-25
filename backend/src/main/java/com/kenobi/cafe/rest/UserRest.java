@@ -20,6 +20,12 @@ public interface UserRest {
     public ResponseEntity<List<UserWrapper>> getAllUsers();
     @PostMapping("/update")
     public ResponseEntity<String> update(@RequestBody Map<String, String> requestMap);
+    @GetMapping("/check-token")
+    public ResponseEntity<String> checkToken();
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody Map<String, String> requestMap);
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> requestMap);
 
 
 }
