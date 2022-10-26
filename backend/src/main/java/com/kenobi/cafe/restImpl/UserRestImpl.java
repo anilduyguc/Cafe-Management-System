@@ -6,17 +6,16 @@ import com.kenobi.cafe.service.UserService;
 import com.kenobi.cafe.utils.CafeUtils;
 import com.kenobi.cafe.wrapper.UserWrapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
-@Controller
+@RestController
 public class UserRestImpl implements UserRest {
     private final UserService userService;
     @Override
