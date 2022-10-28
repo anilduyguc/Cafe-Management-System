@@ -11,14 +11,18 @@ import com.kenobi.cafe.pojo.Bill;
 import com.kenobi.cafe.service.BillService;
 import com.kenobi.cafe.utils.CafeUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.io.IOUtils;
 import org.json.JSONArray;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
@@ -76,6 +80,66 @@ public class BillServiceImpl implements BillService {
             exception.printStackTrace();
         }
         return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<List<Bill>> getBills() {
+        List<Bill> bills = new ArrayList<>();
+        try {
+            if(jwtFilter.isAdmin()){
+                 bills = billDao.getBills();
+            } else {
+                bills = billDao.getBillByUsername(jwtFilter.getCurrentUser());
+            }
+        } catch (Exception exception){
+            exception.printStackTrace();
+        }
+        return new ResponseEntity<>(bills, HttpStatus.NOT_FOUND);
+    }
+
+    @Override
+    public ResponseEntity<byte[]> getPdf(Map<String, Object> requestMap) {
+        try {
+            byte[] bytes = new byte[0];
+            if(!requestMap.containsKey("uuid") && this.validateRequestMap(requestMap)){
+                return new ResponseEntity<>(bytes, HttpStatus.BAD_REQUEST);
+            }
+            String filePath = CafeConstants.STORE_LOCATION+"/"+(String) requestMap.get("uuid") + ".pdf";
+            if(CafeUtils.isFileExists(filePath)){
+                bytes = this.getByteArray(filePath);
+                return new ResponseEntity<>(bytes, HttpStatus.OK);
+            } else {
+                requestMap.put("isGenerate", false);
+                this.generateReport(requestMap);
+                bytes = this.getByteArray(filePath);
+                return new ResponseEntity<>(bytes, HttpStatus.OK);
+            }
+        } catch (Exception exception){
+            exception.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<String> deleteBill(Integer id) {
+        try {
+            Optional<Bill> billOptional = billDao.findById(id);
+            if(billOptional.isPresent()){
+                billDao.deleteById(id);
+                return CafeUtils.getResponseEntity("Bill "+billOptional.get().getUuid() + " was deleted successfully", HttpStatus.OK);
+            } else return CafeUtils.getResponseEntity("Bill with id " + id + " does not exists", HttpStatus.NOT_FOUND);
+        } catch (Exception exception){
+            exception.printStackTrace();
+        }
+        return CafeUtils.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private byte[] getByteArray(String filePath) throws IOException {
+        File file = new File(filePath);
+        InputStream targetStream = new FileInputStream(file);
+        byte[] byteArray = IOUtils.toByteArray(targetStream);
+        targetStream.close();
+        return byteArray;
     }
 
     private void addRows(PdfPTable table, Map<String, Object> data) {
